@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'cadastro_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginForm extends StatefulWidget {
   @override
@@ -11,9 +11,8 @@ class _LoginFormState extends State<LoginForm> {
   final _usuarioController = TextEditingController();
   final _senhaController = TextEditingController();
 
-  bool _isButtonDisabled = true; // Variável para controlar o estado dos botões
+  bool _isButtonDisabled = true;
 
-  // Método para verificar se os campos estão preenchidos
   void _validateFields() {
     setState(() {
       _isButtonDisabled =
@@ -21,25 +20,49 @@ class _LoginFormState extends State<LoginForm> {
     });
   }
 
-  // Método para fazer o login
   void _login() async {
-    final prefs = await SharedPreferences.getInstance();
-    final savedUser = prefs.getString('user');
-    final savedSenha = prefs.getString('senha');
-
     final enteredUser = _usuarioController.text;
     final enteredSenha = _senhaController.text;
 
-    if (enteredUser == savedUser && enteredSenha == savedSenha) {
-      // Login bem-sucedido, navegar para a página "Home"
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      // Dados de login incorretos, mostrar um AlertDialog de erro
+    final Map<String, dynamic> requestBody = {
+      "username": enteredUser,
+      "password": enteredSenha,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse("http://192.168.1.6:8080/Login"),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: json.encode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Erro de login'),
+            content: Text('Usuário ou senha incorretos.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (error) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Erro de login'),
-          content: Text('Usuário não cadastrado ou senha incorreta.'),
+          title: Text('Erro'),
+          content: Text('Ocorreu um erro ao fazer o login.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -56,7 +79,6 @@ class _LoginFormState extends State<LoginForm> {
   @override
   void initState() {
     super.initState();
-    // Chamando a função para validar os campos inicialmente
     _validateFields();
   }
 
@@ -70,7 +92,6 @@ class _LoginFormState extends State<LoginForm> {
           TextFormField(
             controller: _usuarioController,
             onChanged: (value) {
-              // Chamando a função para validar os campos sempre que houver alteração no campo de usuário
               _validateFields();
             },
             decoration: InputDecoration(
@@ -81,7 +102,6 @@ class _LoginFormState extends State<LoginForm> {
           TextFormField(
             controller: _senhaController,
             onChanged: (value) {
-              // Chamando a função para validar os campos sempre que houver alteração no campo de senha
               _validateFields();
             },
             obscureText: true,
@@ -91,21 +111,8 @@ class _LoginFormState extends State<LoginForm> {
           ),
           SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _isButtonDisabled
-                ? null // Desabilita o botão se os campos não estiverem preenchidos
-                : _login,
+            onPressed: _isButtonDisabled ? null : _login,
             child: Text('Login'),
-          ),
-          SizedBox(height: 20),
-          TextButton(
-            onPressed: () {
-              // Navega para a página de cadastro
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CadastroPage()),
-              );
-            },
-            child: Text('Criar conta'),
           ),
         ],
       ),

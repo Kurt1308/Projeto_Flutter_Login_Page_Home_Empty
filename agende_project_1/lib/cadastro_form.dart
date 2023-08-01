@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CadastroForm extends StatefulWidget {
@@ -10,9 +12,8 @@ class _CadastroFormState extends State<CadastroForm> {
   final _usuarioController = TextEditingController();
   final _senhaController = TextEditingController();
 
-  bool _isButtonDisabled = true; // Variável para controlar o estado dos botões
+  bool _isButtonDisabled = true;
 
-  // Método para verificar se os campos estão preenchidos
   void _validateFields() {
     setState(() {
       _isButtonDisabled =
@@ -20,44 +21,83 @@ class _CadastroFormState extends State<CadastroForm> {
     });
   }
 
-  // Método para realizar o cadastro
   void _cadastrar() async {
     final newUser = _usuarioController.text;
     final newSenha = _senhaController.text;
 
-    // Simulando o cadastro (salvando os dados no SharedPreferences)
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('user', newUser);
-    prefs.setString('senha', newSenha);
+    final Map<String, dynamic> requestBody = {
+      "username": newUser,
+      "password": newSenha,
+    };
 
-    // Mostrando um alerta com o resultado do cadastro
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Cadastro'),
-        content: Text('Usuário e senha cadastrados com sucesso!'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: Text('OK'),
+    try {
+      final response = await http.post(
+        Uri.parse("http://192.168.1.6:8080/Cadastro"), // Change the endpoint to the appropriate URL for registration
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: json.encode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Cadastro'),
+            content: Text('Usuário e senha cadastrados com sucesso!'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
 
-    // Limpando os campos após o cadastro
-    _usuarioController.clear();
-    _senhaController.clear();
-    // Chamando a função para validar os campos após limpar
-    _validateFields();
+        _usuarioController.clear();
+        _senhaController.clear();
+        _validateFields();
+      } else {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Erro de cadastro'),
+            content: Text('Ocorreu um erro ao cadastrar o usuário.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (error) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Erro'),
+          content: Text('Ocorreu um erro ao fazer o cadastro.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    // Chamando a função para validar os campos inicialmente
     _validateFields();
   }
 
@@ -71,7 +111,6 @@ class _CadastroFormState extends State<CadastroForm> {
           TextFormField(
             controller: _usuarioController,
             onChanged: (value) {
-              // Chamando a função para validar os campos sempre que houver alteração no campo de usuário
               _validateFields();
             },
             decoration: InputDecoration(
@@ -82,7 +121,6 @@ class _CadastroFormState extends State<CadastroForm> {
           TextFormField(
             controller: _senhaController,
             onChanged: (value) {
-              // Chamando a função para validar os campos sempre que houver alteração no campo de senha
               _validateFields();
             },
             obscureText: true,
@@ -92,9 +130,7 @@ class _CadastroFormState extends State<CadastroForm> {
           ),
           SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _isButtonDisabled
-                ? null // Desabilita o botão se os campos não estiverem preenchidos
-                : _cadastrar,
+            onPressed: _isButtonDisabled ? null : _cadastrar,
             child: Text('Cadastrar'),
           ),
         ],

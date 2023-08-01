@@ -14,10 +14,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      initialRoute: '/login', // Defina a página inicial aqui
+      initialRoute: '/login',
       routes: {
         '/login': (context) => LoginPage(),
-        '/home': (context) => HomePage(), // Adicione a rota para a página "Home"
+        '/home': (context) => HomePage(),
       },
     );
   }
